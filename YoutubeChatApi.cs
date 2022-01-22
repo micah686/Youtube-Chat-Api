@@ -62,15 +62,14 @@ namespace YoutubeChatApi
             json.RemoveAt(0);
             foreach (var entry in json)
             {
-
-                var item = Util.QueryJson(entry, "replayChatItemAction.actions[0].addChatItemAction.item");
-                if(item != null)
+                //var str = JsonConvert.SerializeObject(entry);
+                //File.WriteAllText("output",str);
+                var item = Util.GetJsonValue<JObject?>(entry, "replayChatItemAction.actions[0].addChatItemAction.item");
+                if (item != null)
                 {
-                    var nextKey = ((JObject)item).Properties().Select(x => x.Name).FirstOrDefault();
-                    if(nextKey != null)
-                    {
-                        JToken? data = Util.QueryJson(item, nextKey);
-
+                    var nextKey = item.Properties().Select(x => x.Name).FirstOrDefault();
+                    if (nextKey != null)
+                    {                      
                         switch (nextKey)
                         {
                             case "liveChatMembershipItemRenderer":
@@ -89,7 +88,7 @@ namespace YoutubeChatApi
                                 break;
                         }
                     }
-                }                
+                }
 
 
             }
@@ -98,18 +97,18 @@ namespace YoutubeChatApi
         private void ParseChatItem(JToken token, string ParentKey)
         {
             var chatItem = new ChatItem();
-            if(ParentKey == "liveChatMembershipItemRenderer")
+            if (ParentKey == "liveChatMembershipItemRenderer")
             {
-                var jToken = Util.QueryJson(token, $"{ParentKey}");
-                if(jToken != null)
+                var jToken = Util.GetJsonValue<JToken?>(token, ParentKey);
+                if (jToken != null)
                 {
-                    var author = Util.QueryJsonValue<string>(jToken, "authorName.simpleText");
-                    chatItem.AuthorName = author;
-                    
-                    
+                    chatItem.AuthorName = Util.GetJsonValue(jToken, "authorName.simpleText");
+                    chatItem.Id = Util.GetJsonValue(jToken, "id");
+
+
                 }
-                
-                
+
+
             }
         }
 
@@ -167,24 +166,21 @@ namespace YoutubeChatApi
                 html = Util.GetPageContent($"https://www.youtube.com/live_chat_replay?continuation={continuation}", new Dictionary<string, string>());
                 var initJson = html.Substring(html.IndexOf("window[\"ytInitialData\"] = ") + "window[\"ytInitialData\"] = ".Length);
                 initJson = initJson.Substring(0, initJson.IndexOf(";</script>"));
+                var token = JToken.Parse(initJson);
 
 
-                var timedContinuation = Util.QueryJson(initJson, "continuationContents.liveChatContinuation.continuations[0].liveChatReplayContinuationData.continuation");
-                if(timedContinuation != null)
+                var continuationValue = Util.GetJsonValue(token, "continuationContents.liveChatContinuation.continuations[0].liveChatReplayContinuationData.continuation");
+                if(continuationValue != null)
                 {
-                    var continuationValue = Util.GetJsonValue<string>(timedContinuation);
-                    if(continuationValue != null)
-                    {
-                        continuation = continuationValue;
-                    }                    
+                    continuation = continuationValue;
                 }
 
-                var actions = Util.QueryJson(initJson, "continuationContents.liveChatContinuation.actions");
-                if(actions != null)
+                var actions = Util.GetJsonValue<JArray?>(token, "continuationContents.liveChatContinuation.actions");
+                if (actions != null)
                 {
-                    ParseActions((JArray)actions);
+                    ParseActions(actions);
                 }
- 
+
 
             }
             else

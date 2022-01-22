@@ -49,97 +49,59 @@ namespace YoutubeChatApi
         }
         
 
-        public static IEnumerable<JToken> AllTokens(JObject obj)
-        {
-            var toSearch = new Stack<JToken>(obj.Children());
-            while (toSearch.Count > 0)
-            {
-                var inspected = toSearch.Pop();
-                yield return inspected;
-                foreach (var child in inspected)
-                {
-                    toSearch.Push(child);
-                }
-            }
-        }
         
 
-        public static T? QueryJsonValue<T>(string json, string query)
+
+        
+        
+
+        public static JToken? GetJToken(JToken token, string query)
         {
-            var queried = QueryJson(json, query);
-            if(queried != null)
+            var data = token.SelectToken(query, false);
+            return data;
+        }
+
+        public static string GetJsonValue(JToken token, string query = "")
+        {
+            if(query != "")
             {
-                if(queried is JObject)
+                var data = GetJToken(token, query);
+                if(data != null)
                 {
-                    var value = GetJsonValue<T>(queried);
-                    return value;
+                    return data.Value<string>() ?? "";
                 }
                 else
                 {
-                    return default(T?);
+                    return "";
                 }
             }
             else
             {
-                return default(T?);
+                return token.Value<string>() ?? "";
             }
         }
 
-        public static T? QueryJsonValue<T>(JToken token, string query)
+        public static T? GetJsonValue<T>(JToken token, string query = "")
         {
-            var queried = QueryJson(token, query);
-            if (queried != null)
+            if (query != "")
             {
-                if (queried is JObject || queried is JValue)
+                var data = GetJToken(token, query);
+                if (data != null)
                 {
-                    var value = GetJsonValue<T>(queried);
-                    return value;
+                    return data.Value<T>() ?? default;
                 }
                 else
                 {
-                    return default(T?);
+                    return default;
                 }
             }
             else
             {
-                return default(T?);
+                return token.Value<T>() ?? default;
             }
         }
 
-        public static JToken? QueryJson(string json, string query)
-        {
-            var jsonData = (JToken?)JsonConvert.DeserializeObject(json);
-            if(jsonData != null)
-            {
-                var queried = jsonData.SelectToken(query, false);
-                return queried;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public static JToken? QueryJson(JToken token, string query)
-        {
-            if (token != null)
-            {
-                var queried = token.SelectToken(query, false);
-                return queried;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public static T? GetJsonValue<T>(JToken token)
-        {
-            var output = token.Value<T>();
-            return output != null ? output : default(T);
-        }
-
-
+        
     }
 
     
