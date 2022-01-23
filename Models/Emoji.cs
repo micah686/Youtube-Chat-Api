@@ -8,11 +8,11 @@ namespace YoutubeChatApi.Models
 {
     class Emoji
     {
-        public string EmojiId { get; protected set; }
-        public List<string> Shortcuts { get; protected set; }
-        public string SearchTerms { get; protected set; }
-        public string IconUrl { get; protected set; }
-        public bool IsCustomEmoji { get; protected set; }
+        public string EmojiId { get;  set; }
+        public List<string> Shortcuts { get;  set; } = new List<string>();
+        public string SearchTerms { get;  set; }
+        public string IconUrl { get;  set; }
+        public bool IsCustomEmoji { get;  set; }
 
         public override string ToString()
         {

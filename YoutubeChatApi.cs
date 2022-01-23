@@ -62,9 +62,9 @@ namespace YoutubeChatApi
             json.RemoveAt(0);
             foreach (var entry in json)
             {
-                //var str = JsonConvert.SerializeObject(entry);
-                //File.WriteAllText("output",str);
+                
                 var item = Util.GetJsonValue<JObject?>(entry, "replayChatItemAction.actions[0].addChatItemAction.item");
+                if(item == null) item = Util.GetJsonValue<JObject?>(entry, "replayChatItemAction.actions[0].addBannerToLiveChatCommand.bannerRenderer");
                 if (item != null)
                 {
                     var nextKey = item.Properties().Select(x => x.Name).FirstOrDefault();
@@ -104,7 +104,18 @@ namespace YoutubeChatApi
                 {
                     chatItem.AuthorName = Util.GetJsonValue(jToken, "authorName.simpleText");
                     chatItem.Id = Util.GetJsonValue(jToken, "id");
+                    chatItem.AuthorChannelID = Util.GetJsonValue(jToken, "authorExternalChannelId");
+                    
+                    chatItem.AuthorIconUrl = Util.GetJsonValue(jToken, "authorPhoto.thumbnails[0].url");
+                    chatItem.Timestamp = Util.GetJsonValue<long>(jToken, "timestampUsec");
+                    
 
+
+
+
+                    var value1 = Util.GetJsonValue<JArray>(jToken, "message.runs");
+                    ParseChatMessage(value1);
+                    //authorBadges[0].liveChatAuthorBadgeRenderer.customThumbnail.thumbnails[0].url
 
                 }
 
@@ -112,6 +123,58 @@ namespace YoutubeChatApi
             }
         }
 
+
+        private void ParseChatMessage(JArray array)
+        {
+            foreach (JObject item in array)
+            {
+                var nextKey = item.Properties().Select(x => x.Name).FirstOrDefault();
+
+                if(nextKey == "text")
+                {
+                    var data = Util.GetJsonValue(item, "text");
+                }
+                else if(nextKey == "emoji")
+                {
+                    var data = Util.GetJsonValue<JToken>(item, "emoji");
+                    if(data != null)
+                    {
+                        var emoji = new Emoji();
+                        emoji.EmojiId = Util.GetJsonValue(data, "emojiId");
+                        var shortcuts = Util.GetJsonValue<JArray>(data, "shortcuts");
+                        if(shortcuts != null)
+                        {
+                            foreach (var shortcut in shortcuts)
+                            {
+                                var shortcutString = Util.GetJsonValue(shortcut, "");
+                                emoji.Shortcuts.Add(shortcutString);
+                            }
+                        }
+
+                        var searchTerms = Util.GetJsonValue<JArray>(data, "searchTerms");
+                        if(searchTerms != null)
+                        {
+                            var searchTermString = "";
+                            foreach (var search in searchTerms)
+                            {
+                                searchTermString += $"{search} ";
+                            }
+                            emoji.SearchTerms = searchTermString.TrimEnd();
+                        }
+
+                        emoji.IconUrl = Util.GetJsonValue(data, "image.thumbnails[0].url");
+
+                        var customEmoji = Util.GetJsonValue(data, "isCustomEmoji");
+                        bool isCustomEmoji;
+                        bool.TryParse(customEmoji, out isCustomEmoji);
+                        emoji.IsCustomEmoji = isCustomEmoji;
+
+
+                        
+                    }
+                }
+            }
+        }
 
         public void GetInitialData(string id, IdType type)
         {
