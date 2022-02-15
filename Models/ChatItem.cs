@@ -13,7 +13,7 @@ namespace YoutubeChatApi.Models
         public string AuthorName { get; internal set; }
         public string AuthorChannelID { get; internal set; }
         public string Message { get; internal set; }
-        public List<object> MessageExtended { get; internal set; }
+        public List<object> MessageExtended { get; internal set; } = new List<object>();
         public string AuthorIconUrl { get; internal set; }
         public string Id { get; internal set; }
         public long Timestamp { get; internal set; }

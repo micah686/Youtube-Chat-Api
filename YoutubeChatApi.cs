@@ -108,13 +108,22 @@ namespace YoutubeChatApi
                     
                     chatItem.AuthorIconUrl = Util.GetJsonValue(jToken, "authorPhoto.thumbnails[0].url");
                     chatItem.Timestamp = Util.GetJsonValue<long>(jToken, "timestampUsec");
+
+
+
+                    var authorBadges = Util.GetJsonValue<JObject>(jToken, "authorBadges[0].liveChatAuthorBadgeRenderer");
+                    if (authorBadges != null)
+                    {
+                        ParseAuthorBadges(authorBadges, ref chatItem);
+                    }
+
+
+                    var messages = Util.GetJsonValue<JArray>(jToken, "message.runs");
+                    if(messages != null)
+                    {
+                        ParseChatMessage(messages, ref chatItem);
+                    }
                     
-
-
-
-
-                    var value1 = Util.GetJsonValue<JArray>(jToken, "message.runs");
-                    ParseChatMessage(value1);
                     //authorBadges[0].liveChatAuthorBadgeRenderer.customThumbnail.thumbnails[0].url
 
                 }
@@ -123,9 +132,48 @@ namespace YoutubeChatApi
             }
         }
 
-
-        private void ParseChatMessage(JArray array)
+        private void ParseAuthorBadges(JObject array, ref ChatItem chatItem)
         {
+            var isIcon = Util.GetJsonValue<string>(array, "icon");
+            if(isIcon != null)
+            {
+                var chatType = Util.GetJsonValue<string>(array, "iconType");
+                if(chatType != null)
+                {
+                    switch (chatType)
+                    {
+                        case "VERIFIED":
+                            chatItem.AuthorType.Add(AuthorType.Verified);
+                            break;
+                        case "OWNER":
+                            chatItem.AuthorType.Add(AuthorType.Owner);
+                            break;
+                        case "MODERATOR":
+                            chatItem.AuthorType.Add(AuthorType.Moderator);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                var customThumbnail = Util.GetJsonValue<JObject>(array, "customThumbnail");
+                if(customThumbnail != null)
+                {
+                    chatItem.AuthorType.Add(AuthorType.Member);
+                    var thumbnail = Util.GetJsonValue<JToken>(customThumbnail, "thumbnails[0].url");
+                    if(thumbnail != null)
+                    {
+                        chatItem.MemberBadgeIconUrl = thumbnail.ToString();
+                    }
+                }
+            }
+        }
+
+        private string ParseChatMessage(JArray array, ref ChatItem chatItem)
+        {
+            string text = "";
             foreach (JObject item in array)
             {
                 var nextKey = item.Properties().Select(x => x.Name).FirstOrDefault();
@@ -133,6 +181,11 @@ namespace YoutubeChatApi
                 if(nextKey == "text")
                 {
                     var data = Util.GetJsonValue(item, "text");
+                    if(data != null)
+                    {
+                        chatItem.MessageExtended.Add(data);
+                        text += data;
+                    }
                 }
                 else if(nextKey == "emoji")
                 {
@@ -168,11 +221,20 @@ namespace YoutubeChatApi
                         bool isCustomEmoji;
                         bool.TryParse(customEmoji, out isCustomEmoji);
                         emoji.IsCustomEmoji = isCustomEmoji;
-
-
+                        
+                        chatItem.MessageExtended.Add(emoji);
                         
                     }
                 }
+            }
+            
+            if(text == null || text.Length == 0)
+            {
+                return "";
+            }
+            else
+            {
+                return text;
             }
         }
 
